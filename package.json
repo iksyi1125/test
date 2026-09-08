@@ -1,0 +1,19 @@
+{
+  "name": "claude-usage-monitor",
+  "version": "0.1.0",
+  "description": "Claude Code 토큰 사용량을 실시간으로 보여주는 로컬 대시보드 (의존성 없음)",
+  "type": "module",
+  "bin": {
+    "claude-usage": "bin/claude-usage.js"
+  },
+  "scripts": {
+    "start": "node bin/claude-usage.js",
+    "cli": "node bin/claude-usage.js --cli",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "MIT",
+  "private": true
+}
