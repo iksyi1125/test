@@ -1,0 +1,1090 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>Claude 토큰 사용량</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%277%27 fill=%27%232a78d6%27/%3E%3Crect x=%277%27 y=%2717%27 width=%275%27 height=%278%27 rx=%271.5%27 fill=%27%23fff%27/%3E%3Crect x=%2713.5%27 y=%2711%27 width=%275%27 height=%2714%27 rx=%271.5%27 fill=%27%23fff%27/%3E%3Crect x=%2720%27 y=%276%27 width=%275%27 height=%2719%27 rx=%271.5%27 fill=%27%23fff%27/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap">
+<style>
+:root {
+  color-scheme: light;
+  --page: #f9f9f7;
+  --surface: #fcfcfb;
+  --ink: #0b0b0b;
+  --ink-2: #52514e;
+  --muted: #898781;
+  --grid: #e1e0d9;
+  --axis: #c3c2b7;
+  --border: rgba(11, 11, 11, 0.10);
+  --accent: #2a78d6;
+  --accent-hover: #3987e5;
+  --track: #cde2fb;
+  --good: #0ca30c;
+  --good-text: #006300;
+  --warning: #fab219;
+  --critical: #d03b3b;
+  --tooltip-bg: #ffffff;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --page: #0d0d0d;
+    --surface: #1a1a19;
+    --ink: #ffffff;
+    --ink-2: #c3c2b7;
+    --muted: #898781;
+    --grid: #2c2c2a;
+    --axis: #383835;
+    --border: rgba(255, 255, 255, 0.10);
+    --accent: #3987e5;
+    --accent-hover: #5598e7;
+    --track: #0d366b;
+    --good-text: #0ca30c;
+    --tooltip-bg: #242423;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --page: #0d0d0d; --surface: #1a1a19; --ink: #ffffff; --ink-2: #c3c2b7; --muted: #898781;
+  --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10);
+  --accent: #3987e5; --accent-hover: #5598e7; --track: #0d366b; --good-text: #0ca30c; --tooltip-bg: #242423;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--page);
+  color: var(--ink);
+  font: 14px/1.45 system-ui, -apple-system, "Segoe UI", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+}
+main { max-width: 1240px; margin: 0 auto; padding: 0 20px 48px; }
+h1 { font-size: 18px; margin: 0; font-weight: 600; }
+h2 { font-size: 13px; font-weight: 600; color: var(--ink-2); margin: 24px 0 10px; text-transform: none; letter-spacing: 0.02em; }
+.topbar {
+  max-width: 1240px; margin: 0 auto; padding: 18px 20px 6px;
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+}
+.sub { margin: 4px 0 0; color: var(--muted); font-size: 12px; word-break: break-all; }
+.status { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ink-2); padding-top: 4px; }
+.dot { width: 10px; height: 10px; border-radius: 50%; background: var(--muted); box-shadow: 0 0 0 2px var(--surface); }
+.dot.on { background: var(--good); animation: pulse 2s ease-in-out infinite; }
+.dot.off { background: var(--critical); }
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.45; } }
+
+.grid { display: grid; gap: 14px; }
+.live-grid { grid-template-columns: 1.1fr 0.8fr 1.6fr; }
+.kpi-grid { grid-template-columns: repeat(4, 1fr); margin-top: 14px; }
+.two { grid-template-columns: 1fr 1fr; margin-top: 14px; }
+main > section > article.card { margin-top: 14px; }
+@media (max-width: 960px) {
+  .live-grid, .two { grid-template-columns: 1fr; }
+  .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+  min-width: 0;
+}
+.card-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 8px; }
+.card-head.mt { margin-top: 14px; }
+.label { font-size: 12px; color: var(--ink-2); font-weight: 500; }
+.muted { color: var(--muted); }
+.small { font-size: 12px; }
+.value { font-size: 26px; font-weight: 600; line-height: 1.15; }
+.value .unit { font-size: 13px; font-weight: 500; color: var(--ink-2); }
+.hero { font-size: 48px; font-weight: 600; line-height: 1.05; margin: 2px 0 4px; }
+.stat .value { margin-top: 2px; }
+.chip { font-size: 11px; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--border); color: var(--ink-2); }
+.chip.active { color: var(--good-text); border-color: var(--good); }
+.row-between { display: flex; justify-content: space-between; color: var(--ink-2); margin-top: 6px; }
+.meter { height: 8px; border-radius: 4px; background: var(--track); overflow: hidden; margin-top: 10px; }
+.meter-fill { height: 100%; width: 0%; background: var(--accent); border-radius: 4px; transition: width 0.4s ease; }
+.kv { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 12px 0 0; }
+.kv div { display: flex; flex-direction: column; }
+.kv dt { font-size: 11px; color: var(--muted); }
+.kv dd { margin: 0; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+.filters { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-top: 22px; }
+.segmented { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: var(--surface); }
+.segmented button {
+  appearance: none; border: 0; background: transparent; color: var(--ink-2); font: inherit; font-size: 13px;
+  padding: 6px 14px; cursor: pointer;
+}
+.segmented button + button { border-left: 1px solid var(--border); }
+.segmented button:hover { background: color-mix(in srgb, var(--ink) 5%, transparent); }
+.segmented button.active { background: var(--accent); color: #fff; }
+.select { display: inline-flex; align-items: center; gap: 8px; }
+.select select { font: inherit; font-size: 13px; padding: 5px 8px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--ink); }
+
+.chart { position: relative; width: 100%; height: 220px; }
+.chart-card .chart { height: 220px; }
+.chart svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.chart .gridline { stroke: var(--grid); stroke-width: 1; }
+.chart .baseline { stroke: var(--axis); stroke-width: 1; }
+.chart .tick { fill: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+.chart .bar { fill: var(--accent); transition: fill 0.12s; }
+.chart .hit { fill: transparent; cursor: default; }
+.chart .band:hover .bar, .chart .band:focus-visible .bar { fill: var(--accent-hover); }
+.chart .band:focus-visible { outline: none; }
+.chart .band:focus-visible .hit { stroke: var(--accent); stroke-width: 1; }
+.chart .dlabel { fill: var(--ink-2); font-size: 11px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.chart .empty { position: absolute; inset: 0; display: grid; place-items: center; color: var(--muted); font-size: 13px; }
+
+.bars { display: grid; gap: 10px; }
+.bars .brow { display: grid; grid-template-columns: 96px 1fr 84px; align-items: center; gap: 10px; font-size: 13px; }
+.bars .brow .name { color: var(--ink-2); }
+.bars .brow .track { height: 10px; background: var(--track); border-radius: 4px; overflow: hidden; }
+.bars .brow .fill { height: 100%; background: var(--accent); border-radius: 4px; transition: width 0.4s ease; }
+.bars .brow .v { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+.bars .brow .v small { color: var(--muted); font-weight: 400; margin-left: 4px; }
+
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--grid); white-space: nowrap; }
+th { font-weight: 500; color: var(--muted); font-size: 12px; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+tbody tr:last-child td { border-bottom: 0; }
+th.bar-col { width: 120px; }
+td .inline-track { height: 8px; background: var(--track); border-radius: 4px; overflow: hidden; }
+td .inline-fill { height: 100%; background: var(--accent); border-radius: 4px; }
+td.mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
+tr.new td { animation: flash 1.6s ease-out; }
+@keyframes flash { from { background: color-mix(in srgb, var(--accent) 22%, transparent); } to { background: transparent; } }
+td.unpriced { color: var(--muted); }
+.empty-row td { color: var(--muted); text-align: center; padding: 18px; }
+
+.tooltip {
+  position: fixed; z-index: 10; pointer-events: none;
+  background: var(--tooltip-bg); color: var(--ink); border: 1px solid var(--border);
+  border-radius: 8px; padding: 8px 10px; font-size: 12px; box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+  min-width: 160px;
+}
+.tooltip .tt-title { color: var(--muted); margin-bottom: 4px; }
+.tooltip .tt-row { display: flex; justify-content: space-between; gap: 14px; }
+.tooltip .tt-row strong { font-variant-numeric: tabular-nums; }
+.tooltip .tt-row.total { border-top: 1px solid var(--grid); margin-top: 4px; padding-top: 4px; }
+
+/* 단일 파일 버전 전용 */
+body { font-family: "IBM Plex Sans KR", system-ui, -apple-system, "Segoe UI", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif; }
+.source {
+  max-width: 1240px; margin: 8px auto 0; padding: 0 20px;
+}
+.source-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px 16px;
+}
+.source-copy { display: flex; flex-direction: column; gap: 2px; min-width: 240px; flex: 1; }
+.source-copy strong { font-weight: 600; font-size: 14px; }
+.source-copy code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
+.source-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.btn {
+  appearance: none; font: inherit; font-size: 13px; cursor: pointer; border-radius: 8px;
+  padding: 7px 14px; border: 1px solid var(--border); background: var(--surface); color: var(--ink);
+}
+.btn:hover { background: color-mix(in srgb, var(--ink) 5%, transparent); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn.primary:hover { background: var(--accent-hover); }
+.btn.ghost { color: var(--ink-2); }
+.btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+#source-note { margin: 8px 4px 0; }
+.dot.sample { background: var(--warning); }
+@media (prefers-reduced-motion: reduce) { .dot.on { animation: none; } .meter-fill, .bars .brow .fill { transition: none; } }
+.tab-url { width: 100%; margin-top: 6px; font: inherit; font-size: 12px; padding: 6px 8px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface); color: var(--ink); }
+
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <h1>Claude 토큰 사용량</h1>
+    <p class="sub" id="source-text">데이터를 불러오는 중…</p>
+  </div>
+  <div class="status">
+    <span class="dot" id="live-dot" aria-hidden="true"></span>
+    <span id="live-text">준비 중</span>
+    <span class="muted" id="updated-at"></span>
+  </div>
+</header>
+
+<section class="source" aria-label="데이터 원본">
+  <div class="source-row">
+    <div class="source-copy">
+      <strong>내 컴퓨터의 기록으로 보기</strong>
+      <span class="muted small">Claude Code 기록 폴더(<code id="hint-path">~/.claude/projects</code>)를 선택하면 브라우저 안에서만 읽습니다. 어디에도 업로드되지 않습니다.</span>
+    </div>
+    <div class="source-actions">
+      <button type="button" class="btn" id="open-tab" hidden>새 탭에서 열기</button>
+      <button type="button" class="btn primary" id="open-dir">폴더 열기 · 실시간</button>
+      <label class="btn" for="file-input">파일 선택 · 1회</label>
+      <input type="file" id="file-input" webkitdirectory multiple accept=".jsonl" hidden>
+      <button type="button" class="btn ghost" id="use-sample">샘플로 돌아가기</button>
+    </div>
+  </div>
+  <p class="small muted" id="source-note" hidden></p>
+  <input type="text" id="tab-url" class="tab-url" readonly hidden aria-label="새 탭에서 열 주소">
+</section>
+
+<main>
+  <section class="live" aria-labelledby="live-title">
+    <h2 id="live-title">지금</h2>
+    <div class="grid live-grid">
+      <article class="card block-card">
+        <div class="card-head">
+          <span class="label">5시간 사용량 창</span>
+          <span class="chip" id="block-state">—</span>
+        </div>
+        <div class="hero" id="block-tokens">0</div>
+        <div class="muted" id="block-window">기록 없음</div>
+        <div class="meter" role="progressbar" aria-label="창 경과" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="block-meter">
+          <div class="meter-fill" id="block-fill"></div>
+        </div>
+        <div class="row-between small">
+          <span id="block-elapsed">경과 —</span>
+          <span id="block-remaining">남은 시간 —</span>
+        </div>
+        <dl class="kv">
+          <div><dt>예상 비용</dt><dd id="block-cost">$0</dd></div>
+          <div><dt>호출</dt><dd id="block-calls">0</dd></div>
+          <div><dt>출력 토큰</dt><dd id="block-output">0</dd></div>
+        </dl>
+      </article>
+
+      <article class="card">
+        <div class="card-head"><span class="label">최근 5분 속도</span></div>
+        <div class="value" id="rate-5m">0 <span class="unit">tok/min</span></div>
+        <div class="muted small" id="rate-5m-detail">최근 5분 합계 0</div>
+        <div class="card-head mt"><span class="label">최근 1분</span></div>
+        <div class="value" id="rate-1m">0</div>
+        <div class="muted small" id="rate-1m-detail">호출 0회</div>
+      </article>
+
+      <article class="card chart-card">
+        <div class="card-head">
+          <span class="label">최근 24시간 · 시간별 토큰</span>
+          <span class="muted small" id="hours-total"></span>
+        </div>
+        <div class="chart" id="hours-chart"></div>
+      </article>
+    </div>
+  </section>
+
+  <section class="history" aria-labelledby="history-title">
+    <div class="filters" role="group" aria-label="필터">
+      <div class="segmented" id="range-buttons">
+        <button type="button" data-range="today" class="active">오늘</button>
+        <button type="button" data-range="7d">7일</button>
+        <button type="button" data-range="30d">30일</button>
+        <button type="button" data-range="all">전체</button>
+      </div>
+      <label class="select">
+        <span class="muted small">프로젝트</span>
+        <select id="project-select"><option value="">전체</option></select>
+      </label>
+      <span class="muted small" id="range-desc"></span>
+    </div>
+
+    <div class="grid kpi-grid">
+      <article class="card stat"><span class="label">총 토큰</span><div class="value" id="kpi-total">0</div><div class="muted small" id="kpi-total-sub"></div></article>
+      <article class="card stat"><span class="label">예상 비용</span><div class="value" id="kpi-cost">$0</div><div class="muted small" id="kpi-cost-sub"></div></article>
+      <article class="card stat"><span class="label">출력 토큰</span><div class="value" id="kpi-output">0</div><div class="muted small" id="kpi-output-sub"></div></article>
+      <article class="card stat"><span class="label">캐시 적중률</span><div class="value" id="kpi-cache">0%</div><div class="muted small" id="kpi-cache-sub"></div></article>
+    </div>
+
+    <div class="grid two">
+      <article class="card chart-card">
+        <div class="card-head"><span class="label" id="days-title">일별 토큰</span></div>
+        <div class="chart" id="days-chart"></div>
+      </article>
+      <article class="card">
+        <div class="card-head"><span class="label">토큰 구성</span></div>
+        <div class="bars" id="composition"></div>
+      </article>
+    </div>
+
+    <div class="grid two">
+      <article class="card">
+        <div class="card-head"><span class="label">모델별</span></div>
+        <div class="table-wrap"><table id="models-table">
+          <thead><tr><th>모델</th><th class="num">토큰</th><th class="num">출력</th><th class="num">비용</th><th class="num">호출</th><th class="bar-col"></th></tr></thead>
+          <tbody></tbody>
+        </table></div>
+      </article>
+      <article class="card">
+        <div class="card-head"><span class="label">세션</span></div>
+        <div class="table-wrap"><table id="sessions-table">
+          <thead><tr><th>마지막 활동</th><th>프로젝트</th><th>모델</th><th class="num">토큰</th><th class="num">비용</th></tr></thead>
+          <tbody></tbody>
+        </table></div>
+      </article>
+    </div>
+
+    <article class="card">
+      <div class="card-head"><span class="label">최근 API 호출</span><span class="muted small">새 호출은 즉시 위에 추가됩니다</span></div>
+      <div class="table-wrap"><table id="recent-table">
+        <thead><tr><th>시각</th><th>모델</th><th>프로젝트</th><th class="num">입력</th><th class="num">캐시 읽기</th><th class="num">캐시 쓰기</th><th class="num">출력</th><th class="num">비용</th></tr></thead>
+        <tbody></tbody>
+      </table></div>
+    </article>
+  </section>
+</main>
+
+<div class="tooltip" id="tooltip" role="tooltip" hidden></div>
+
+<script type="application/json" id="sample-data">{"label":"예시 데이터","events":[{"key":"msg_1:req_1","ts":1788840798903,"sessionId":"s1","project":"test","model":"claude-fable-5-1","input":2,"output":312,"cacheRead":38641,"cacheWrite5m":0,"cacheWrite1h":17330},{"key":"msg_2:req_2","ts":1788843600000,"sessionId":"s2","project":"other","model":"claude-sonnet-5","input":1000,"output":200,"cacheRead":0,"cacheWrite5m":500,"cacheWrite1h":0},{"key":"msg_4:req_4","ts":1788865200000,"sessionId":"s2","project":"other","model":"claude-unknown-9","input":10,"output":5,"cacheRead":0,"cacheWrite5m":0,"cacheWrite1h":0}]}</script>
+<script>
+(() => {
+'use strict';
+// 모델별 가격표 (USD / 1M tokens). 캐시 쓰기는 5분 TTL = 입력가 x1.25, 1시간 TTL = 입력가 x2.
+// 캐시 읽기는 입력가 x0.1 (Fable 5.1 계열은 $0.25 고정).
+// 새 모델이나 다른 가격을 쓰려면 --pricing <json> 으로 덮어쓸 수 있다 (README 참고).
+
+const DEFAULT_PRICING = [
+  { id: 'claude-fable-5-1', match: /^claude-(fable|mythos)-5-1/, input: 10, output: 50, cacheWrite5m: 12.5, cacheWrite1h: 20, cacheRead: 0.25 },
+  { id: 'claude-fable-5', match: /^claude-(fable|mythos)-5/, input: 10, output: 50, cacheWrite5m: 12.5, cacheWrite1h: 20, cacheRead: 1 },
+  { id: 'claude-opus-5', match: /^claude-opus-(5|4-8|4-7|4-6|4-5)/, input: 5, output: 25, cacheWrite5m: 6.25, cacheWrite1h: 10, cacheRead: 0.5 },
+  { id: 'claude-opus-4', match: /^claude-opus-4/, input: 15, output: 75, cacheWrite5m: 18.75, cacheWrite1h: 30, cacheRead: 1.5 },
+  { id: 'claude-sonnet-5', match: /^claude-sonnet-5/, input: 2, output: 10, cacheWrite5m: 2.5, cacheWrite1h: 4, cacheRead: 0.2 },
+  { id: 'claude-sonnet-4', match: /^claude-(sonnet-4|sonnet-3|3-7-sonnet|3-5-sonnet)/, input: 3, output: 15, cacheWrite5m: 3.75, cacheWrite1h: 6, cacheRead: 0.3 },
+  { id: 'claude-haiku-4-5', match: /^claude-haiku-4/, input: 1, output: 5, cacheWrite5m: 1.25, cacheWrite1h: 2, cacheRead: 0.1 },
+  { id: 'claude-haiku-3-5', match: /^claude-(3-5-haiku|haiku-3-5)/, input: 0.8, output: 4, cacheWrite5m: 1, cacheWrite1h: 1.6, cacheRead: 0.08 },
+  { id: 'claude-haiku-3', match: /^claude-(3-haiku|haiku-3)/, input: 0.25, output: 1.25, cacheWrite5m: 0.3, cacheWrite1h: 0.5, cacheRead: 0.03 },
+];
+
+/** Bedrock/Vertex 스타일 접두어를 떼고 소문자로 정규화한다. */
+function normalizeModel(model) {
+  if (!model || typeof model !== 'string') return '';
+  let m = model.trim().toLowerCase();
+  m = m.replace(/^(us|eu|apac|global)\./, '').replace(/^anthropic\./, '');
+  m = m.replace(/@\d{8}$/, ''); // Vertex 날짜 구분자
+  return m;
+}
+
+/** 사용자 JSON 파일로 가격을 덮어쓴다. { "claude-foo": { input, output, cacheWrite5m, cacheWrite1h, cacheRead } } */
+function buildPricing(overrides) {
+  if (!overrides) return DEFAULT_PRICING;
+  const extra = Object.entries(overrides).map(([id, p]) => {
+    const input = Number(p.input ?? 0);
+    return {
+      id,
+      match: new RegExp('^' + id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')),
+      input,
+      output: Number(p.output ?? 0),
+      cacheWrite5m: Number(p.cacheWrite5m ?? input * 1.25),
+      cacheWrite1h: Number(p.cacheWrite1h ?? input * 2),
+      cacheRead: Number(p.cacheRead ?? input * 0.1),
+    };
+  });
+  return [...extra, ...DEFAULT_PRICING];
+}
+
+function findPrice(model, pricing = DEFAULT_PRICING) {
+  const m = normalizeModel(model);
+  if (!m) return null;
+  return pricing.find((p) => p.match.test(m)) ?? null;
+}
+
+/**
+ * 토큰 수 -> USD. 가격표에 없는 모델이면 null 을 돌려주고, 호출자가 "미확인" 으로 표시한다.
+ * @param {{input:number, output:number, cacheRead:number, cacheWrite5m:number, cacheWrite1h:number}} u
+ */
+function costOf(u, model, pricing = DEFAULT_PRICING) {
+  const p = findPrice(model, pricing);
+  if (!p) return null;
+  const per = 1_000_000;
+  return (
+    (u.input * p.input +
+      u.output * p.output +
+      u.cacheRead * p.cacheRead +
+      u.cacheWrite5m * p.cacheWrite5m +
+      u.cacheWrite1h * p.cacheWrite1h) /
+    per
+  );
+}
+
+// 이벤트 목록 -> 대시보드/CLI 가 쓰는 요약 객체.
+
+const HOUR = 3_600_000;
+const DAY = 24 * HOUR;
+const BLOCK_MS = 5 * HOUR; // 구독 요금제 5시간 사용량 창
+
+const RANGES = ['today', '7d', '30d', 'all'];
+
+function zero() {
+  return { input: 0, output: 0, cacheRead: 0, cacheWrite5m: 0, cacheWrite1h: 0, total: 0, cost: 0, calls: 0, unpriced: 0 };
+}
+
+function add(acc, ev) {
+  acc.input += ev.input;
+  acc.output += ev.output;
+  acc.cacheRead += ev.cacheRead;
+  acc.cacheWrite5m += ev.cacheWrite5m;
+  acc.cacheWrite1h += ev.cacheWrite1h;
+  acc.total += ev.total;
+  acc.calls += 1;
+  if (ev.cost == null) acc.unpriced += 1;
+  else acc.cost += ev.cost;
+  return acc;
+}
+
+/** 로컬 자정 (ms) */
+function startOfDay(ts) {
+  const d = new Date(ts);
+  d.setHours(0, 0, 0, 0);
+  return d.getTime();
+}
+
+function dayKey(ts) {
+  const d = new Date(ts);
+  const p = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+
+function rangeStart(range, now) {
+  switch (range) {
+    case 'today':
+      return startOfDay(now);
+    case '7d':
+      return startOfDay(now) - 6 * DAY;
+    case '30d':
+      return startOfDay(now) - 29 * DAY;
+    default:
+      return -Infinity;
+  }
+}
+
+/**
+ * 5시간 사용량 창 계산. 첫 호출 시각을 정시로 내림한 것이 창의 시작이며,
+ * 창이 끝나거나 5시간 이상 쉬면 새 창이 열린다. 현재 시각이 창 안이면 활성.
+ */
+function currentBlock(events, now) {
+  if (!events.length) return null;
+  let start = null;
+  let last = null;
+  let acc = zero();
+  let models = new Map();
+  for (const ev of events) {
+    if (start === null || ev.ts >= start + BLOCK_MS || ev.ts - last >= BLOCK_MS) {
+      start = Math.floor(ev.ts / HOUR) * HOUR;
+      acc = zero();
+      models = new Map();
+    }
+    add(acc, ev);
+    models.set(ev.model, add(models.get(ev.model) ?? zero(), ev));
+    last = ev.ts;
+  }
+  const end = start + BLOCK_MS;
+  const active = now >= start && now < end && now - last < BLOCK_MS;
+  return {
+    start,
+    end,
+    active,
+    lastActivity: last,
+    elapsedMs: Math.min(Math.max(now - start, 0), BLOCK_MS),
+    remainingMs: Math.max(end - now, 0),
+    ...acc,
+    byModel: [...models.entries()].map(([model, v]) => ({ model, ...v })).sort((a, b) => b.total - a.total),
+  };
+}
+
+function summarize(allEvents, { range = 'today', project = '', now = Date.now() } = {}) {
+  const from = rangeStart(RANGES.includes(range) ? range : 'today', now);
+  const projects = [...new Set(allEvents.map((e) => e.project))].sort();
+  const scoped = project ? allEvents.filter((e) => e.project === project) : allEvents;
+  const events = scoped.filter((e) => e.ts >= from);
+
+  const totals = zero();
+  const byModel = new Map();
+  const byDay = new Map();
+  const bySession = new Map();
+  for (const ev of events) {
+    add(totals, ev);
+    byModel.set(ev.model, add(byModel.get(ev.model) ?? zero(), ev));
+    const dk = dayKey(ev.ts);
+    byDay.set(dk, add(byDay.get(dk) ?? zero(), ev));
+    let s = bySession.get(ev.sessionId);
+    if (!s) {
+      s = { sessionId: ev.sessionId, project: ev.project, cwd: ev.cwd, firstTs: ev.ts, lastTs: ev.ts, models: new Set(), ...zero() };
+      bySession.set(ev.sessionId, s);
+    }
+    add(s, ev);
+    s.lastTs = Math.max(s.lastTs, ev.ts);
+    s.firstTs = Math.min(s.firstTs, ev.ts);
+    s.models.add(ev.model);
+  }
+
+  // 일별: 범위가 있으면 빈 날도 0 으로 채운다. 전체 범위는 첫 이벤트부터 최대 365일.
+  const days = [];
+  const firstTs = events.length ? events[0].ts : now;
+  let dayFrom = Number.isFinite(from) ? from : startOfDay(firstTs);
+  dayFrom = Math.max(dayFrom, startOfDay(now) - 364 * DAY);
+  for (let t = dayFrom; t <= now; t += DAY) {
+    const k = dayKey(t);
+    days.push({ day: k, ...(byDay.get(k) ?? zero()) });
+  }
+
+  // 최근 24시간, 시간별 (프로젝트 필터만 적용)
+  const hourFrom = Math.floor(now / HOUR) * HOUR - 23 * HOUR;
+  const hours = Array.from({ length: 24 }, (_, i) => ({ hour: hourFrom + i * HOUR, ...zero() }));
+  for (const ev of scoped) {
+    if (ev.ts < hourFrom) continue;
+    const idx = Math.min(23, Math.floor((ev.ts - hourFrom) / HOUR));
+    add(hours[idx], ev);
+  }
+
+  // 실시간 속도: 최근 1분 / 5분
+  const rate = { last1m: zero(), last5m: zero() };
+  for (let i = scoped.length - 1; i >= 0; i--) {
+    const ev = scoped[i];
+    if (ev.ts < now - 5 * 60_000) break;
+    add(rate.last5m, ev);
+    if (ev.ts >= now - 60_000) add(rate.last1m, ev);
+  }
+
+  const sessions = [...bySession.values()]
+    .sort((a, b) => b.lastTs - a.lastTs)
+    .slice(0, 50)
+    .map((s) => ({ ...s, models: [...s.models] }));
+
+  const recent = scoped.slice(-30).reverse();
+
+  const cacheable = totals.input + totals.cacheRead + totals.cacheWrite5m + totals.cacheWrite1h;
+  return {
+    now,
+    range,
+    project,
+    projects,
+    from: Number.isFinite(from) ? from : null,
+    totals: { ...totals, cacheHitRate: cacheable ? totals.cacheRead / cacheable : 0 },
+    byModel: [...byModel.entries()].map(([model, v]) => ({ model, ...v })).sort((a, b) => b.total - a.total),
+    days,
+    hours,
+    rate,
+    block: currentBlock(scoped, now),
+    sessions,
+    recent,
+    eventCount: allEvents.length,
+  };
+}
+
+window.__claudeUsage = { costOf, normalizeModel, summarize, startOfDay };
+})();
+</script>
+<script>
+(() => {
+  'use strict';
+  const { costOf, normalizeModel } = window.__claudeUsage;
+  const { summarize, startOfDay } = window.__claudeUsage;
+  const $ = (id) => document.getElementById(id);
+  const state = { range: 'today', project: '', summary: null, seenKeys: new Set(), firstLoad: true, es: null };
+
+  // ---------- 포맷 ----------
+  const fmtTok = (n) => {
+    n = Math.round(n || 0);
+    if (n >= 1e9) return (n / 1e9).toFixed(2) + 'B';
+    if (n >= 1e6) return (n / 1e6).toFixed(n >= 1e7 ? 1 : 2) + 'M';
+    if (n >= 1e3) return (n / 1e3).toFixed(n >= 1e5 ? 0 : 1) + 'K';
+    return String(n);
+  };
+  const fmtFull = (n) => Math.round(n || 0).toLocaleString('ko-KR');
+  const fmtUsd = (n) => {
+    n = n || 0;
+    if (n === 0) return '$0';
+    if (n < 0.01) return '$' + n.toFixed(4);
+    if (n < 1) return '$' + n.toFixed(3);
+    return '$' + n.toLocaleString('ko-KR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  };
+  const fmtTime = (ts) => new Date(ts).toLocaleTimeString('ko-KR', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  const fmtHM = (ts) => new Date(ts).toLocaleTimeString('ko-KR', { hour12: false, hour: '2-digit', minute: '2-digit' });
+  const fmtDateTime = (ts) => new Date(ts).toLocaleString('ko-KR', { hour12: false, month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+  const fmtDur = (ms) => {
+    const h = Math.floor(ms / 3.6e6), m = Math.floor((ms % 3.6e6) / 6e4);
+    return h ? `${h}시간 ${m}분` : `${m}분`;
+  };
+  const relTime = (ts, now) => {
+    const d = Math.max(0, now - ts);
+    if (d < 60e3) return '방금';
+    if (d < 3.6e6) return `${Math.floor(d / 6e4)}분 전`;
+    if (d < 86.4e6) return `${Math.floor(d / 3.6e6)}시간 전`;
+    return `${Math.floor(d / 86.4e6)}일 전`;
+  };
+  const shortModel = (m) => m.replace(/^claude-/, '');
+  const cacheWrite = (o) => (o.cacheWrite5m || 0) + (o.cacheWrite1h || 0);
+
+  // ---------- 툴팁 ----------
+  const tip = $('tooltip');
+  function showTip(x, y, title, rows) {
+    tip.textContent = '';
+    const t = document.createElement('div'); t.className = 'tt-title'; t.textContent = title; tip.appendChild(t);
+    for (const [label, value, cls] of rows) {
+      const r = document.createElement('div'); r.className = 'tt-row' + (cls ? ' ' + cls : '');
+      const l = document.createElement('span'); l.textContent = label;
+      const v = document.createElement('strong'); v.textContent = value;
+      r.append(l, v); tip.appendChild(r);
+    }
+    tip.hidden = false;
+    const pad = 14, w = tip.offsetWidth, h = tip.offsetHeight;
+    let left = x + pad, top = y + pad;
+    if (left + w > window.innerWidth - 8) left = x - w - pad;
+    if (top + h > window.innerHeight - 8) top = y - h - pad;
+    tip.style.left = left + 'px'; tip.style.top = top + 'px';
+  }
+  const hideTip = () => { tip.hidden = true; };
+
+  // ---------- 컬럼 차트 (단일 계열, SVG) ----------
+  function niceMax(v) {
+    if (v <= 0) return 1;
+    const p = Math.pow(10, Math.floor(Math.log10(v)));
+    const f = v / p;
+    const n = [1, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10].find((k) => f <= k) || 10;
+    return n * p;
+  }
+  const svgEl = (tag, attrs) => {
+    const e = document.createElementNS('http://www.w3.org/2000/svg', tag);
+    for (const k in attrs) e.setAttribute(k, attrs[k]);
+    return e;
+  };
+  function renderColumns(container, items, { xLabel, tipTitle, tipRows, labelEvery = 1 }) {
+    container.textContent = '';
+    const W = container.clientWidth || 600, H = container.clientHeight || 220;
+    const m = { top: 18, right: 8, bottom: 26, left: 44 };
+    const iw = W - m.left - m.right, ih = H - m.top - m.bottom;
+    const max = niceMax(Math.max(0, ...items.map((d) => d.total)));
+    const svg = svgEl('svg', { viewBox: `0 0 ${W} ${H}`, width: W, height: H, role: 'img', 'aria-label': tipTitle });
+    const y = (v) => m.top + ih - (v / max) * ih;
+    const ticks = 4;
+    for (let i = 0; i <= ticks; i++) {
+      const v = (max / ticks) * i, yy = y(v);
+      svg.appendChild(svgEl('line', { x1: m.left, x2: W - m.right, y1: yy, y2: yy, class: i === 0 ? 'baseline' : 'gridline' }));
+      const t = svgEl('text', { x: m.left - 6, y: yy + 4, 'text-anchor': 'end', class: 'tick' }); t.textContent = fmtTok(v); svg.appendChild(t);
+    }
+    const n = items.length, band = iw / Math.max(n, 1);
+    const bw = Math.min(24, Math.max(2, band * 0.62));
+    const maxIdx = items.reduce((bi, d, i) => (d.total > (items[bi]?.total ?? -1) ? i : bi), 0);
+    const allZero = items.every((d) => d.total === 0);
+    items.forEach((d, i) => {
+      const cx = m.left + band * i + band / 2, x0 = cx - bw / 2, yTop = y(d.total), h = Math.max(0, m.top + ih - yTop);
+      const g = svgEl('g', { class: 'band', tabindex: '0', role: 'listitem' });
+      const r = Math.min(4, h, bw / 2);
+      const path = h > 0
+        ? `M${x0},${m.top + ih} V${yTop + r} Q${x0},${yTop} ${x0 + r},${yTop} H${x0 + bw - r} Q${x0 + bw},${yTop} ${x0 + bw},${yTop + r} V${m.top + ih} Z`
+        : `M${x0},${m.top + ih} H${x0 + bw}`;
+      g.appendChild(svgEl('path', { d: path, class: 'bar' }));
+      g.appendChild(svgEl('rect', { x: m.left + band * i, y: m.top, width: band, height: ih, class: 'hit' }));
+      if (i === maxIdx && d.total > 0) {
+        const t = svgEl('text', { x: cx, y: yTop - 5, 'text-anchor': 'middle', class: 'dlabel' }); t.textContent = fmtTok(d.total); svg.appendChild(t);
+      }
+      if (i % labelEvery === 0 || i === n - 1) {
+        const t = svgEl('text', { x: cx, y: H - 8, 'text-anchor': 'middle', class: 'tick' }); t.textContent = xLabel(d, i); svg.appendChild(t);
+      }
+      const show = (ev) => showTip(ev.clientX ?? cx, ev.clientY ?? yTop, tipTitle + ' · ' + xLabel(d, i, true), tipRows(d));
+      g.addEventListener('pointermove', show);
+      g.addEventListener('pointerleave', hideTip);
+      g.addEventListener('focus', () => {
+        const rect = g.getBoundingClientRect();
+        showTip(rect.left + rect.width / 2, rect.top, tipTitle + ' · ' + xLabel(d, i, true), tipRows(d));
+      });
+      g.addEventListener('blur', hideTip);
+      svg.appendChild(g);
+    });
+    container.appendChild(svg);
+    if (allZero) {
+      const e = document.createElement('div'); e.className = 'empty'; e.textContent = '이 기간에는 기록이 없습니다'; container.appendChild(e);
+    }
+  }
+  const usageRows = (d) => [
+    ['입력', fmtFull(d.input)], ['캐시 읽기', fmtFull(d.cacheRead)], ['캐시 쓰기', fmtFull(cacheWrite(d))], ['출력', fmtFull(d.output)],
+    ['합계', fmtFull(d.total), 'total'], ['예상 비용', fmtUsd(d.cost)], ['호출', `${d.calls}회`],
+  ];
+
+  // ---------- 렌더 ----------
+  function renderBlock(s) {
+    const b = s.block, now = s.now;
+    if (!b) {
+      $('block-state').textContent = '기록 없음'; $('block-state').classList.remove('active');
+      $('block-tokens').textContent = '0'; $('block-window').textContent = '아직 기록된 호출이 없습니다';
+      $('block-fill').style.width = '0%'; $('block-elapsed').textContent = '경과 —'; $('block-remaining').textContent = '남은 시간 —';
+      $('block-cost').textContent = '$0'; $('block-calls').textContent = '0'; $('block-output').textContent = '0';
+      return;
+    }
+    const total = b.end - b.start, elapsed = Math.min(Math.max(now - b.start, 0), total), pct = Math.round((elapsed / total) * 100);
+    $('block-state').textContent = b.active ? '활성' : '종료됨';
+    $('block-state').classList.toggle('active', b.active);
+    $('block-tokens').textContent = fmtTok(b.total);
+    $('block-tokens').title = fmtFull(b.total) + ' 토큰';
+    $('block-window').textContent = `${fmtDateTime(b.start)} → ${fmtHM(b.end)} · 마지막 호출 ${relTime(b.lastActivity, now)}`;
+    $('block-fill').style.width = pct + '%';
+    $('block-meter').setAttribute('aria-valuenow', pct);
+    $('block-elapsed').textContent = `경과 ${fmtDur(elapsed)} (${pct}%)`;
+    $('block-remaining').textContent = b.active ? `남은 시간 ${fmtDur(Math.max(b.end - now, 0))}` : '다음 호출에서 새 창이 열립니다';
+    $('block-cost').textContent = fmtUsd(b.cost);
+    $('block-calls').textContent = `${b.calls}회`;
+    $('block-output').textContent = fmtTok(b.output);
+  }
+
+  function renderRate(s) {
+    const r5 = s.rate.last5m, r1 = s.rate.last1m;
+    $('rate-5m').textContent = '';
+    $('rate-5m').append(fmtTok(Math.round(r5.total / 5)) + ' ', Object.assign(document.createElement('span'), { className: 'unit', textContent: 'tok/min' }));
+    $('rate-5m-detail').textContent = `최근 5분 합계 ${fmtFull(r5.total)} · ${r5.calls}회 · ${fmtUsd(r5.cost)}`;
+    $('rate-1m').textContent = fmtTok(r1.total);
+    $('rate-1m-detail').textContent = `호출 ${r1.calls}회 · 출력 ${fmtFull(r1.output)}`;
+  }
+
+  function renderHours(s) {
+    const total = s.hours.reduce((a, h) => a + h.total, 0);
+    $('hours-total').textContent = `합계 ${fmtTok(total)} · ${fmtUsd(s.hours.reduce((a, h) => a + h.cost, 0))}`;
+    renderColumns($('hours-chart'), s.hours, {
+      xLabel: (d, i, long) => (long ? fmtDateTime(d.hour) + '시' : new Date(d.hour).getHours() + '시'),
+      tipTitle: '시간별', tipRows: usageRows, labelEvery: 3,
+    });
+  }
+
+  function renderKpis(s) {
+    const t = s.totals;
+    $('kpi-total').textContent = fmtTok(t.total); $('kpi-total').title = fmtFull(t.total);
+    $('kpi-total-sub').textContent = `${t.calls}회 호출 · 입력 ${fmtTok(t.input)} · 캐시 ${fmtTok(t.cacheRead + cacheWrite(t))}`;
+    $('kpi-cost').textContent = fmtUsd(t.cost);
+    $('kpi-cost-sub').textContent = t.unpriced ? `가격 미확인 ${t.unpriced}건 제외` : t.calls ? `호출당 평균 ${fmtUsd(t.cost / t.calls)}` : '';
+    $('kpi-output').textContent = fmtTok(t.output);
+    $('kpi-output-sub').textContent = t.calls ? `호출당 평균 ${fmtFull(t.output / t.calls)}` : '';
+    $('kpi-cache').textContent = (t.cacheHitRate * 100).toFixed(1) + '%';
+    $('kpi-cache-sub').textContent = `읽기 ${fmtTok(t.cacheRead)} / 쓰기 ${fmtTok(cacheWrite(t))}`;
+  }
+
+  function renderComposition(s) {
+    const t = s.totals, c = $('composition'); c.textContent = '';
+    const parts = [['입력', t.input], ['캐시 읽기', t.cacheRead], ['캐시 쓰기', cacheWrite(t)], ['출력', t.output]];
+    const max = Math.max(1, ...parts.map((p) => p[1]));
+    for (const [name, v] of parts) {
+      const row = document.createElement('div'); row.className = 'brow';
+      const n = document.createElement('span'); n.className = 'name'; n.textContent = name;
+      const track = document.createElement('div'); track.className = 'track';
+      const fill = document.createElement('div'); fill.className = 'fill'; fill.style.width = (v / max) * 100 + '%'; track.appendChild(fill);
+      const val = document.createElement('span'); val.className = 'v'; val.textContent = fmtTok(v);
+      const pct = document.createElement('small'); pct.textContent = t.total ? Math.round((v / t.total) * 100) + '%' : '0%'; val.appendChild(pct);
+      row.append(n, track, val); c.appendChild(row);
+    }
+  }
+
+  function renderDays(s) {
+    const days = s.days;
+    $('days-title').textContent = days.length <= 1 ? '오늘 토큰' : `일별 토큰 (${days.length}일)`;
+    const every = days.length > 40 ? 7 : days.length > 14 ? 3 : 1;
+    renderColumns($('days-chart'), days, {
+      xLabel: (d, i, long) => (long ? d.day : d.day.slice(5).replace('-', '/')),
+      tipTitle: '일별', tipRows: usageRows, labelEvery: every,
+    });
+  }
+
+  const td = (text, cls) => { const e = document.createElement('td'); if (cls) e.className = cls; e.textContent = text; return e; };
+  const emptyRow = (cols, text) => { const tr = document.createElement('tr'); tr.className = 'empty-row'; const c = td(text); c.colSpan = cols; tr.appendChild(c); return tr; };
+
+  function renderModels(s) {
+    const tb = $('models-table').tBodies[0]; tb.textContent = '';
+    if (!s.byModel.length) return tb.appendChild(emptyRow(6, '기록 없음'));
+    const max = Math.max(1, ...s.byModel.map((m) => m.total));
+    for (const m of s.byModel) {
+      const tr = document.createElement('tr');
+      tr.append(td(shortModel(m.model)), td(fmtTok(m.total), 'num'), td(fmtTok(m.output), 'num'), td(m.unpriced ? '?' : fmtUsd(m.cost), 'num' + (m.unpriced ? ' unpriced' : '')), td(String(m.calls), 'num'));
+      const bar = document.createElement('td'); const tr2 = document.createElement('div'); tr2.className = 'inline-track';
+      const f = document.createElement('div'); f.className = 'inline-fill'; f.style.width = (m.total / max) * 100 + '%'; tr2.appendChild(f); bar.appendChild(tr2);
+      tr.appendChild(bar); tr.title = `${m.model} · ${fmtFull(m.total)} 토큰`;
+      tb.appendChild(tr);
+    }
+  }
+
+  function renderSessions(s) {
+    const tb = $('sessions-table').tBodies[0]; tb.textContent = '';
+    if (!s.sessions.length) return tb.appendChild(emptyRow(5, '기록 없음'));
+    for (const x of s.sessions.slice(0, 12)) {
+      const tr = document.createElement('tr');
+      tr.title = `${x.sessionId}\n${x.cwd || ''}\n시작 ${fmtDateTime(x.firstTs)}`;
+      tr.append(td(relTime(x.lastTs, s.now)), td(x.project), td(x.models.map(shortModel).join(', ')), td(fmtTok(x.total), 'num'), td(x.unpriced ? '?' : fmtUsd(x.cost), 'num'));
+      tb.appendChild(tr);
+    }
+  }
+
+  function renderRecent(s) {
+    const tb = $('recent-table').tBodies[0]; tb.textContent = '';
+    if (!s.recent.length) return tb.appendChild(emptyRow(8, '기록 없음'));
+    for (const e of s.recent.slice(0, 20)) {
+      const tr = document.createElement('tr');
+      if (!state.firstLoad && !state.seenKeys.has(e.key)) tr.className = 'new';
+      state.seenKeys.add(e.key);
+      tr.append(td(fmtTime(e.ts), 'mono'), td(shortModel(e.model) + (e.sidechain ? ' (서브)' : '')), td(e.project), td(fmtFull(e.input), 'num'), td(fmtFull(e.cacheRead), 'num'), td(fmtFull(cacheWrite(e)), 'num'), td(fmtFull(e.output), 'num'), td(e.cost == null ? '?' : fmtUsd(e.cost), 'num' + (e.cost == null ? ' unpriced' : '')));
+      tr.title = `세션 ${e.sessionId}`;
+      tb.appendChild(tr);
+    }
+    if (state.seenKeys.size > 2000) state.seenKeys = new Set(s.recent.map((e) => e.key));
+  }
+
+  function renderProjects(s) {
+    const sel = $('project-select');
+    const cur = state.project;
+    const have = new Set([...sel.options].map((o) => o.value));
+    for (const p of s.projects) {
+      if (!have.has(p)) { const o = document.createElement('option'); o.value = p; o.textContent = p; sel.appendChild(o); }
+    }
+    sel.value = s.projects.includes(cur) ? cur : '';
+  }
+
+  let renderMeta = function (s) {
+    $('watch-dirs').textContent = `감시: ${s.dirs.join(', ')} · ${s.usingWatch ? 'fs.watch' : '폴링'} · 이벤트 ${s.eventCount.toLocaleString('ko-KR')}건`;
+    $('updated-at').textContent = `갱신 ${fmtTime(s.now)}`;
+    const from = s.from ? fmtDateTime(s.from) + ' 이후' : '전체 기간';
+    $('range-desc').textContent = from;
+  }
+
+  function render(s) {
+    state.summary = s;
+    renderMeta(s); renderBlock(s); renderRate(s); renderHours(s);
+    renderProjects(s); renderKpis(s); renderComposition(s); renderDays(s); renderModels(s); renderSessions(s); renderRecent(s);
+    state.firstLoad = false;
+  }
+
+
+  // ---------- 데이터 (브라우저 전용: 내장 샘플 / 폴더 열기 / 파일 선택) ----------
+  const isWin = navigator.platform.startsWith('Win');
+  $('hint-path').textContent = isWin ? '%USERPROFILE%\\.claude\\projects' : '~/.claude/projects';
+
+  const data = { events: [], keys: new Set(), source: 'sample', label: '', live: null };
+
+  function projectFromPath(name) {
+    // "-home-user-test" 또는 "C--Users-me-app" -> 마지막 토막
+    const parts = String(name).split('-').filter(Boolean);
+    return parts.length ? parts[parts.length - 1] : String(name);
+  }
+  function basename(p) {
+    const s = String(p).replace(/[\\/]+$/, '');
+    const i = Math.max(s.lastIndexOf('/'), s.lastIndexOf('\\'));
+    return i >= 0 ? s.slice(i + 1) : s;
+  }
+  const num = (v) => (typeof v === 'number' && Number.isFinite(v) && v > 0 ? v : 0);
+
+  function parseLine(line, fileLabel, dirName) {
+    if (!line || line.charCodeAt(0) !== 123) return null;
+    let o;
+    try { o = JSON.parse(line); } catch { return null; }
+    if (o.type !== 'assistant' || !o.message || typeof o.message !== 'object') return null;
+    const msg = o.message, u = msg.usage;
+    if (!u || typeof u !== 'object') return null;
+    const model = normalizeModel(msg.model);
+    if (!model || model === '<synthetic>') return null;
+    const input = num(u.input_tokens), output = num(u.output_tokens), cacheRead = num(u.cache_read_input_tokens);
+    const cacheWriteTotal = num(u.cache_creation_input_tokens);
+    let cacheWrite5m = num(u.cache_creation && u.cache_creation.ephemeral_5m_input_tokens);
+    let cacheWrite1h = num(u.cache_creation && u.cache_creation.ephemeral_1h_input_tokens);
+    if (cacheWrite5m + cacheWrite1h === 0 && cacheWriteTotal > 0) cacheWrite5m = cacheWriteTotal;
+    if (input + output + cacheRead + cacheWrite5m + cacheWrite1h === 0) return null;
+    const ts = Date.parse(o.timestamp);
+    if (!Number.isFinite(ts)) return null;
+    const id = msg.id || o.uuid || `${fileLabel}:${ts}`;
+    const tokens = { input, output, cacheRead, cacheWrite5m, cacheWrite1h };
+    return {
+      key: `${id}:${o.requestId || ''}`, ts, file: fileLabel,
+      sessionId: o.sessionId || fileLabel.replace(/\.jsonl$/, ''),
+      project: o.cwd ? basename(o.cwd) : projectFromPath(dirName),
+      cwd: o.cwd || null, model, ...tokens,
+      total: input + output + cacheRead + cacheWrite5m + cacheWrite1h,
+      cost: typeof o.costUSD === 'number' ? o.costUSD : costOf(tokens, model),
+      sidechain: Boolean(o.isSidechain), version: o.version || null,
+    };
+  }
+
+  function addText(text, fileLabel, dirName) {
+    let added = 0;
+    for (const raw of text.split('\n')) {
+      const ev = parseLine(raw.trim(), fileLabel, dirName);
+      if (!ev || data.keys.has(ev.key)) continue;
+      data.keys.add(ev.key); data.events.push(ev); added++;
+    }
+    if (added) data.events.sort((a, b) => a.ts - b.ts);
+    return added;
+  }
+  function resetData(source, label) {
+    data.events = []; data.keys = new Set(); data.source = source; data.label = label;
+    state.seenKeys = new Set(); state.firstLoad = true;
+  }
+
+  // 요약 렌더 (서버 대신 로컬 계산)
+  function load() {
+    const now = Date.now();
+    if (state.range === 'today' && !state.autoRanged) {
+      state.autoRanged = true;
+      const hasToday = data.events.some((e) => e.ts >= startOfDay(now));
+      if (!hasToday && data.events.length) {
+        state.range = 'all';
+        for (const x of $('range-buttons').querySelectorAll('button')) x.classList.toggle('active', x.dataset.range === 'all');
+      }
+    }
+    const s = summarize(data.events, { range: state.range, project: state.project, now });
+    s.eventCount = data.events.length;
+    render(s);
+  }
+  function setLive(mode, text) {
+    $('live-dot').className = 'dot ' + mode;
+    $('live-text').textContent = text;
+  }
+  function note(text) { $('source-note').textContent = text || ''; $('source-note').hidden = !text; }
+
+  // 1) 내장 샘플
+  function loadSample() {
+    stopLive();
+    const el = document.getElementById('sample-data');
+    const sample = el ? JSON.parse(el.textContent) : { label: '샘플 없음', events: [] };
+    resetData('sample', sample.label);
+    for (const e of sample.events) {
+      const ev = { ...e, cost: costOf(e, e.model), total: e.input + e.output + e.cacheRead + e.cacheWrite5m + e.cacheWrite1h, sidechain: false, cwd: null, file: '' };
+      if (!data.keys.has(ev.key)) { data.keys.add(ev.key); data.events.push(ev); }
+    }
+    data.events.sort((a, b) => a.ts - b.ts);
+    state.autoRanged = false;
+    setLive('sample', '샘플 데이터');
+    note('');
+    load();
+  }
+
+  // 2) 폴더 열기 (File System Access API) -> 2초마다 새 바이트만 읽어 실시간 갱신
+  function stopLive() {
+    if (data.live) { clearInterval(data.live.timer); clearInterval(data.live.rescan); data.live = null; }
+  }
+  async function* walk(dirHandle, prefix = '') {
+    for await (const [name, handle] of dirHandle.entries()) {
+      if (handle.kind === 'directory') yield* walk(handle, prefix + name + '/');
+      else if (name.endsWith('.jsonl')) yield { path: prefix + name, handle, dirName: prefix.split('/').filter(Boolean).pop() || '' };
+    }
+  }
+  const embedded = (() => { try { return window.self !== window.top; } catch { return true; } })();
+  function openInNewTab() {
+    const url = location.href;
+    let w = null;
+    try { w = window.open(url, '_blank', 'noopener'); } catch { w = null; }
+    if (!w) {
+      note('새 탭을 열지 못했습니다. 아래 주소를 복사해 새 탭에 붙여 넣으세요: ' + url);
+      $('tab-url').value = url; $('tab-url').hidden = false; $('tab-url').select();
+    }
+  }
+  async function openDirectory() {
+    if (embedded) {
+      note('이 화면은 다른 페이지 안에 끼워져 있어 브라우저가 폴더 선택을 막습니다. "새 탭에서 열기" 를 누른 뒤 그 탭에서 "폴더 열기 · 실시간" 을 사용하세요.');
+      openInNewTab();
+      return;
+    }
+    if (!window.showDirectoryPicker) {
+      note('이 브라우저는 폴더 실시간 읽기를 지원하지 않습니다. Chrome·Edge 에서 열거나 "파일 선택 · 1회" 를 사용하세요.');
+      return;
+    }
+    let dirHandle;
+    try {
+      dirHandle = await window.showDirectoryPicker({ id: 'claude-projects', mode: 'read' });
+    } catch (e) {
+      if (e && e.name === 'AbortError') return;
+      note('폴더를 열 수 없습니다 (' + (e && e.message ? e.message : e) + '). 이 화면이 다른 페이지 안에 끼워져 있으면 새 탭에서 열어 보세요. 또는 "파일 선택 · 1회" 를 사용하세요.');
+      return;
+    }
+    stopLive();
+    resetData('dir', dirHandle.name);
+    state.autoRanged = false;
+    setLive('on', '실시간 · 폴더 감시 중');
+    const files = new Map(); // path -> { handle, offset, remainder, dirName }
+    const readNew = async (entry) => {
+      let f;
+      try { f = await entry.handle.getFile(); } catch { return 0; }
+      if (f.size < entry.offset) { entry.offset = 0; entry.remainder = ''; }
+      if (f.size === entry.offset) return 0;
+      const chunk = await f.slice(entry.offset).text();
+      entry.offset = f.size;
+      const text = entry.remainder + chunk;
+      const lastNl = text.lastIndexOf('\n');
+      if (lastNl === -1) { entry.remainder = text; return 0; }
+      entry.remainder = text.slice(lastNl + 1);
+      return addText(text.slice(0, lastNl), entry.path, entry.dirName);
+    };
+    const rescan = async () => {
+      let found = 0;
+      try {
+        for await (const { path, handle, dirName } of walk(dirHandle)) {
+          found++;
+          if (!files.has(path)) files.set(path, { handle, offset: 0, remainder: '', dirName, path });
+        }
+      } catch (e) { note('폴더를 다시 읽지 못했습니다: ' + (e && e.message ? e.message : e)); }
+      return found;
+    };
+    const found = await rescan();
+    let added = 0;
+    for (const entry of files.values()) added += await readNew(entry);
+    note(`${dirHandle.name} 에서 .jsonl ${found}개, 호출 ${data.events.length.toLocaleString('ko-KR')}건을 읽었습니다. 새 호출은 2초 안에 반영됩니다.`);
+    load();
+    let busy = false;
+    const timer = setInterval(async () => {
+      if (busy) return; busy = true;
+      try {
+        let n = 0;
+        for (const entry of files.values()) n += await readNew(entry);
+        if (n) load(); else $('updated-at').textContent = `확인 ${fmtTime(Date.now())}`;
+      } finally { busy = false; }
+    }, 2000);
+    const rescanTimer = setInterval(rescan, 15000);
+    data.live = { timer, rescan: rescanTimer };
+  }
+
+  // 3) 파일 선택 (1회 읽기, 모든 브라우저)
+  async function loadFiles(list) {
+    const files = [...list].filter((f) => f.name.endsWith('.jsonl'));
+    if (!files.length) { note('.jsonl 파일이 없습니다. ~/.claude/projects 폴더를 선택했는지 확인하세요.'); return; }
+    stopLive();
+    resetData('files', files.length + '개 파일');
+    state.autoRanged = false;
+    setLive('off', '1회 읽기 (실시간 아님)');
+    for (const f of files) {
+      const rel = f.webkitRelativePath || f.name;
+      const parts = rel.split('/');
+      const dirName = parts.length >= 2 ? parts[parts.length - 2] : '';
+      addText(await f.text(), rel, dirName);
+    }
+    note(`파일 ${files.length}개에서 호출 ${data.events.length.toLocaleString('ko-KR')}건을 읽었습니다. 실시간 갱신은 "폴더 열기 · 실시간" 을 사용하세요.`);
+    load();
+  }
+
+  // 메타 (서버 버전의 renderMeta 를 덮어쓴다)
+  renderMeta = function (s) {
+    const src = data.source === 'sample' ? `샘플: ${data.label}` : data.source === 'dir' ? `폴더: ${data.label}` : `파일: ${data.label}`;
+    $('source-text').textContent = `${src} · 호출 ${s.eventCount.toLocaleString('ko-KR')}건 · 비용은 API 요금 환산 참고값`;
+    $('updated-at').textContent = `갱신 ${fmtTime(s.now)}`;
+    $('range-desc').textContent = s.from ? fmtDateTime(s.from) + ' 이후' : '전체 기간';
+  };
+
+  // 컨트롤
+  $('range-buttons').addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-range]'); if (!b) return;
+    state.range = b.dataset.range; state.autoRanged = true;
+    for (const x of $('range-buttons').querySelectorAll('button')) x.classList.toggle('active', x === b);
+    load();
+  });
+  $('project-select').addEventListener('change', (e) => { state.project = e.target.value; load(); });
+  $('open-dir').addEventListener('click', openDirectory);
+  $('file-input').addEventListener('change', (e) => loadFiles(e.target.files));
+  $('use-sample').addEventListener('click', loadSample);
+  if (!window.showDirectoryPicker) $('open-dir').title = 'Chrome 또는 Edge 에서 지원';
+  $('open-tab').addEventListener('click', openInNewTab);
+  if (embedded) {
+    $('open-tab').hidden = false;
+    $('open-dir').classList.remove('primary'); $('open-tab').classList.add('primary');
+    note('폴더 실시간 읽기는 이 화면이 끼워진 상태에서는 막혀 있습니다. "새 탭에서 열기" 로 연 다음 "폴더 열기 · 실시간" 을 누르세요. 파일 선택창에서 숨김 폴더가 안 보이면 macOS 는 ⌘⇧. , Windows 는 주소창에 경로를 직접 입력하세요.');
+  }
+
+  setInterval(() => { if (state.summary) renderBlock({ ...state.summary, now: Date.now() }); }, 10e3);
+  let rz;
+  window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => state.summary && (renderHours(state.summary), renderDays(state.summary)), 120); });
+
+  loadSample();
+})();
+
+</script>
+</body>
+</html>
