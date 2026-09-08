@@ -31,6 +31,20 @@ node bin/claude-usage.js --cli --range 7d --project my-app
 | `--pricing <json>` | 모델 가격 덮어쓰기 (아래 참고) |
 | `--range` / `--project` | CLI 모드의 기간(`today`, `7d`, `30d`, `all`)과 프로젝트 필터 |
 
+## 설치 없이 브라우저에서 보기 (standalone)
+
+`standalone/index.html` 은 서버 없이 동작하는 단일 HTML 파일입니다. 파일을 브라우저로 열고
+**폴더 열기 · 실시간** 버튼으로 `~/.claude/projects` 를 선택하면 브라우저 안에서만 기록을 읽어
+2초마다 새 호출을 반영합니다(Chrome·Edge의 File System Access API 사용). 다른 브라우저에서는
+**파일 선택 · 1회** 로 한 번에 읽을 수 있습니다. 어디에도 업로드되지 않습니다.
+
+다시 만들려면:
+
+```bash
+node scripts/build-standalone.mjs                                  # 예시 데이터 내장
+node scripts/build-standalone.mjs --sample ~/.claude/projects --label "내 기록"   # 실제 기록 내장
+```
+
 ## 화면 구성
 
 **지금** (필터와 무관한 실시간 영역)

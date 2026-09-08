@@ -61,7 +61,7 @@
     if (v <= 0) return 1;
     const p = Math.pow(10, Math.floor(Math.log10(v)));
     const f = v / p;
-    const n = f <= 1 ? 1 : f <= 2 ? 2 : f <= 2.5 ? 2.5 : f <= 5 ? 5 : 10;
+    const n = [1, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10].find((k) => f <= k) || 10;
     return n * p;
   }
   const svgEl = (tag, attrs) => {

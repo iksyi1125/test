@@ -1,0 +1,133 @@
+<header class="topbar">
+  <div class="brand">
+    <h1>Claude 토큰 사용량</h1>
+    <p class="sub" id="source-text">데이터를 불러오는 중…</p>
+  </div>
+  <div class="status">
+    <span class="dot" id="live-dot" aria-hidden="true"></span>
+    <span id="live-text">준비 중</span>
+    <span class="muted" id="updated-at"></span>
+  </div>
+</header>
+
+<section class="source" aria-label="데이터 원본">
+  <div class="source-row">
+    <div class="source-copy">
+      <strong>내 컴퓨터의 기록으로 보기</strong>
+      <span class="muted small">Claude Code 기록 폴더(<code id="hint-path">~/.claude/projects</code>)를 선택하면 브라우저 안에서만 읽습니다. 어디에도 업로드되지 않습니다.</span>
+    </div>
+    <div class="source-actions">
+      <button type="button" class="btn primary" id="open-dir">폴더 열기 · 실시간</button>
+      <label class="btn" for="file-input">파일 선택 · 1회</label>
+      <input type="file" id="file-input" webkitdirectory multiple accept=".jsonl" hidden>
+      <button type="button" class="btn ghost" id="use-sample">샘플로 돌아가기</button>
+    </div>
+  </div>
+  <p class="small muted" id="source-note" hidden></p>
+</section>
+
+<main>
+  <section class="live" aria-labelledby="live-title">
+    <h2 id="live-title">지금</h2>
+    <div class="grid live-grid">
+      <article class="card block-card">
+        <div class="card-head">
+          <span class="label">5시간 사용량 창</span>
+          <span class="chip" id="block-state">—</span>
+        </div>
+        <div class="hero" id="block-tokens">0</div>
+        <div class="muted" id="block-window">기록 없음</div>
+        <div class="meter" role="progressbar" aria-label="창 경과" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="block-meter">
+          <div class="meter-fill" id="block-fill"></div>
+        </div>
+        <div class="row-between small">
+          <span id="block-elapsed">경과 —</span>
+          <span id="block-remaining">남은 시간 —</span>
+        </div>
+        <dl class="kv">
+          <div><dt>예상 비용</dt><dd id="block-cost">$0</dd></div>
+          <div><dt>호출</dt><dd id="block-calls">0</dd></div>
+          <div><dt>출력 토큰</dt><dd id="block-output">0</dd></div>
+        </dl>
+      </article>
+
+      <article class="card">
+        <div class="card-head"><span class="label">최근 5분 속도</span></div>
+        <div class="value" id="rate-5m">0 <span class="unit">tok/min</span></div>
+        <div class="muted small" id="rate-5m-detail">최근 5분 합계 0</div>
+        <div class="card-head mt"><span class="label">최근 1분</span></div>
+        <div class="value" id="rate-1m">0</div>
+        <div class="muted small" id="rate-1m-detail">호출 0회</div>
+      </article>
+
+      <article class="card chart-card">
+        <div class="card-head">
+          <span class="label">최근 24시간 · 시간별 토큰</span>
+          <span class="muted small" id="hours-total"></span>
+        </div>
+        <div class="chart" id="hours-chart"></div>
+      </article>
+    </div>
+  </section>
+
+  <section class="history" aria-labelledby="history-title">
+    <div class="filters" role="group" aria-label="필터">
+      <div class="segmented" id="range-buttons">
+        <button type="button" data-range="today" class="active">오늘</button>
+        <button type="button" data-range="7d">7일</button>
+        <button type="button" data-range="30d">30일</button>
+        <button type="button" data-range="all">전체</button>
+      </div>
+      <label class="select">
+        <span class="muted small">프로젝트</span>
+        <select id="project-select"><option value="">전체</option></select>
+      </label>
+      <span class="muted small" id="range-desc"></span>
+    </div>
+
+    <div class="grid kpi-grid">
+      <article class="card stat"><span class="label">총 토큰</span><div class="value" id="kpi-total">0</div><div class="muted small" id="kpi-total-sub"></div></article>
+      <article class="card stat"><span class="label">예상 비용</span><div class="value" id="kpi-cost">$0</div><div class="muted small" id="kpi-cost-sub"></div></article>
+      <article class="card stat"><span class="label">출력 토큰</span><div class="value" id="kpi-output">0</div><div class="muted small" id="kpi-output-sub"></div></article>
+      <article class="card stat"><span class="label">캐시 적중률</span><div class="value" id="kpi-cache">0%</div><div class="muted small" id="kpi-cache-sub"></div></article>
+    </div>
+
+    <div class="grid two">
+      <article class="card chart-card">
+        <div class="card-head"><span class="label" id="days-title">일별 토큰</span></div>
+        <div class="chart" id="days-chart"></div>
+      </article>
+      <article class="card">
+        <div class="card-head"><span class="label">토큰 구성</span></div>
+        <div class="bars" id="composition"></div>
+      </article>
+    </div>
+
+    <div class="grid two">
+      <article class="card">
+        <div class="card-head"><span class="label">모델별</span></div>
+        <div class="table-wrap"><table id="models-table">
+          <thead><tr><th>모델</th><th class="num">토큰</th><th class="num">출력</th><th class="num">비용</th><th class="num">호출</th><th class="bar-col"></th></tr></thead>
+          <tbody></tbody>
+        </table></div>
+      </article>
+      <article class="card">
+        <div class="card-head"><span class="label">세션</span></div>
+        <div class="table-wrap"><table id="sessions-table">
+          <thead><tr><th>마지막 활동</th><th>프로젝트</th><th>모델</th><th class="num">토큰</th><th class="num">비용</th></tr></thead>
+          <tbody></tbody>
+        </table></div>
+      </article>
+    </div>
+
+    <article class="card">
+      <div class="card-head"><span class="label">최근 API 호출</span><span class="muted small">새 호출은 즉시 위에 추가됩니다</span></div>
+      <div class="table-wrap"><table id="recent-table">
+        <thead><tr><th>시각</th><th>모델</th><th>프로젝트</th><th class="num">입력</th><th class="num">캐시 읽기</th><th class="num">캐시 쓰기</th><th class="num">출력</th><th class="num">비용</th></tr></thead>
+        <tbody></tbody>
+      </table></div>
+    </article>
+  </section>
+</main>
+
+<div class="tooltip" id="tooltip" role="tooltip" hidden></div>
