@@ -17,6 +17,7 @@
       <span class="muted small">Claude Code 기록 폴더(<code id="hint-path">~/.claude/projects</code>)를 선택하면 브라우저 안에서만 읽습니다. 어디에도 업로드되지 않습니다.</span>
     </div>
     <div class="source-actions">
+      <button type="button" class="btn" id="open-tab" hidden>새 탭에서 열기</button>
       <button type="button" class="btn primary" id="open-dir">폴더 열기 · 실시간</button>
       <label class="btn" for="file-input">파일 선택 · 1회</label>
       <input type="file" id="file-input" webkitdirectory multiple accept=".jsonl" hidden>
@@ -24,6 +25,7 @@
     </div>
   </div>
   <p class="small muted" id="source-note" hidden></p>
+  <input type="text" id="tab-url" class="tab-url" readonly hidden aria-label="새 탭에서 열 주소">
 </section>
 
 <main>

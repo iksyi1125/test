@@ -109,7 +109,22 @@
       else if (name.endsWith('.jsonl')) yield { path: prefix + name, handle, dirName: prefix.split('/').filter(Boolean).pop() || '' };
     }
   }
+  const embedded = (() => { try { return window.self !== window.top; } catch { return true; } })();
+  function openInNewTab() {
+    const url = location.href;
+    let w = null;
+    try { w = window.open(url, '_blank', 'noopener'); } catch { w = null; }
+    if (!w) {
+      note('새 탭을 열지 못했습니다. 아래 주소를 복사해 새 탭에 붙여 넣으세요: ' + url);
+      $('tab-url').value = url; $('tab-url').hidden = false; $('tab-url').select();
+    }
+  }
   async function openDirectory() {
+    if (embedded) {
+      note('이 화면은 다른 페이지 안에 끼워져 있어 브라우저가 폴더 선택을 막습니다. "새 탭에서 열기" 를 누른 뒤 그 탭에서 "폴더 열기 · 실시간" 을 사용하세요.');
+      openInNewTab();
+      return;
+    }
     if (!window.showDirectoryPicker) {
       note('이 브라우저는 폴더 실시간 읽기를 지원하지 않습니다. Chrome·Edge 에서 열거나 "파일 선택 · 1회" 를 사용하세요.');
       return;
@@ -206,6 +221,12 @@
   $('file-input').addEventListener('change', (e) => loadFiles(e.target.files));
   $('use-sample').addEventListener('click', loadSample);
   if (!window.showDirectoryPicker) $('open-dir').title = 'Chrome 또는 Edge 에서 지원';
+  $('open-tab').addEventListener('click', openInNewTab);
+  if (embedded) {
+    $('open-tab').hidden = false;
+    $('open-dir').classList.remove('primary'); $('open-tab').classList.add('primary');
+    note('폴더 실시간 읽기는 이 화면이 끼워진 상태에서는 막혀 있습니다. "새 탭에서 열기" 로 연 다음 "폴더 열기 · 실시간" 을 누르세요. 파일 선택창에서 숨김 폴더가 안 보이면 macOS 는 ⌘⇧. , Windows 는 주소창에 경로를 직접 입력하세요.');
+  }
 
   setInterval(() => { if (state.summary) renderBlock({ ...state.summary, now: Date.now() }); }, 10e3);
   let rz;

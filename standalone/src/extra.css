@@ -23,3 +23,4 @@ body { font-family: "IBM Plex Sans KR", system-ui, -apple-system, "Segoe UI", "A
 #source-note { margin: 8px 4px 0; }
 .dot.sample { background: var(--warning); }
 @media (prefers-reduced-motion: reduce) { .dot.on { animation: none; } .meter-fill, .bars .brow .fill { transition: none; } }
+.tab-url { width: 100%; margin-top: 6px; font: inherit; font-size: 12px; padding: 6px 8px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface); color: var(--ink); }
