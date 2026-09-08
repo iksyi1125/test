@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import fs from 'node:fs';
 import path from 'node:path';
+import { spawn } from 'node:child_process';
 import { TranscriptStore, defaultTranscriptDirs } from '../src/transcripts.js';
 import { buildPricing } from '../src/pricing.js';
 import { createServer } from '../src/server.js';
@@ -17,13 +18,14 @@ const HELP = `claude-usage — Claude Code 토큰 사용량 실시간 모니터
   --host <h>        바인드 주소 (기본 127.0.0.1)
   --dir <path>      트랜스크립트 디렉터리 (여러 번 지정 가능, 기본 ~/.claude/projects)
   --pricing <json>  모델 가격 덮어쓰기 파일
+  --no-open         브라우저를 자동으로 열지 않음
   --range <r>       CLI 모드 범위: today | 7d | 30d | all (기본 today)
   --project <name>  CLI 모드 프로젝트 필터
   -h, --help        도움말
 `;
 
 function parseArgs(argv) {
-  const o = { dirs: [], port: Number(process.env.PORT) || 3141, host: '127.0.0.1', cli: false, range: 'today', project: '', pricing: null };
+  const o = { dirs: [], port: Number(process.env.PORT) || 3141, host: '127.0.0.1', cli: false, range: 'today', project: '', pricing: null, open: true };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     const next = () => argv[++i];
@@ -34,6 +36,7 @@ function parseArgs(argv) {
     else if (a === '--range') o.range = next();
     else if (a === '--project') o.project = next();
     else if (a === '--cli') o.cli = true;
+    else if (a === '--no-open') o.open = false;
     else if (a === '-h' || a === '--help') {
       process.stdout.write(HELP);
       process.exit(0);
@@ -64,5 +67,17 @@ if (opts.cli) {
   server.listen(opts.port, opts.host, () => {
     console.log(`Claude 토큰 사용량 대시보드: http://${opts.host}:${opts.port}`);
     console.log(`감시 디렉터리: ${dirs.join(', ')}  (이벤트 ${store.events.length}건 로드)`);
+    if (opts.open) openBrowser(`http://${opts.host === '0.0.0.0' ? '127.0.0.1' : opts.host}:${opts.port}`);
   });
+}
+
+function openBrowser(url) {
+  const cmd = process.platform === 'darwin' ? ['open', [url]] : process.platform === 'win32' ? ['cmd', ['/c', 'start', '', url]] : ['xdg-open', [url]];
+  try {
+    const child = spawn(cmd[0], cmd[1], { stdio: 'ignore', detached: true });
+    child.on('error', () => {});
+    child.unref();
+  } catch {
+    // 브라우저를 못 열어도 서버는 계속 동작한다
+  }
 }
